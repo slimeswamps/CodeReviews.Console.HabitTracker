@@ -176,13 +176,14 @@ namespace Habit_Logger
             using (SqliteConnection connection = new SqliteConnection(connectionString))
             {
                 connection.Open();
-                SqliteCommand command = new SqliteCommand();
+                SqliteCommand command = connection.CreateCommand();
 
                 command.CommandText =
                     $@"DELETE FROM drinkingWater
                         WHERE LogID = {id}";
 
-
+                command.ExecuteNonQuery();
+                connection.Close();
             }
         }
         private static void GetRecords() 
