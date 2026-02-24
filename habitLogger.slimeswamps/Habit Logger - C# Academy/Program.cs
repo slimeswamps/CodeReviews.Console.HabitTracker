@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.Sqlite;
 using System.Globalization;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Habit_Logger
 {
@@ -77,8 +78,6 @@ namespace Habit_Logger
             Console.Clear();
             Console.WriteLine("Currently: Creating New Record\n");
 
-            string date = DateTime.Today.ToString("dd-MM-yyyy");
-
             Console.WriteLine("Please Enter number of glasses drank or 0 to return to main menu:");
             string? input = Console.ReadLine();
             int quantity = 0;
@@ -90,6 +89,15 @@ namespace Habit_Logger
             if (quantity == 0)
             {
                 return;
+            }
+
+
+            Console.WriteLine("Please enter the date (dd-mm-yyyy)");
+            string? date = Console.ReadLine();
+            while (!DateTime.TryParseExact(date, "dd-MM-yyyy", new CultureInfo("en-GB"), DateTimeStyles.None, out _))
+            {
+                Console.WriteLine("\nPlease enter the date in the format(dd-mm-yyyy)");
+                date = Console.ReadLine();
             }
 
             Console.WriteLine($"Creating Record: \n\tDate: {date} \n\tQuantity: {quantity}");
@@ -115,28 +123,59 @@ namespace Habit_Logger
             Console.Clear();
             Console.WriteLine("Currently: Updating Record\n");
 
-            GetRecords();
-            Console.WriteLine("Select a record to update");
-            Console.WriteLine("Type the ID of the record or 0 to return to main menu");
-            string? input = Console.ReadLine();
-            int updatedID = 0;
-            while (!Int32.TryParse(input,out updatedID))
+            Console.WriteLine("What would you like to update:\n\t1 - Quantity\n\t2 - Date\n\t0 - Return to main menu");
+            string? optionInput = Console.ReadLine();
+            int option = 0;
+            while(!Int32.TryParse(optionInput, out option))
             {
-                Console.WriteLine("Please enter a number:");
-                input = Console.ReadLine();
+                Console.WriteLine("\nPlease enter a number"); 
+                Console.WriteLine("What would you like to update:\n\t1 - Quantity\n\t2 - Date\n\t0 - Return to main menu");
             }
-            if (updatedID == 0) 
+            while(option != 0 && option != 1 && option != 2)
+            {
+                Console.WriteLine("\nPlease select one of the options");
+                Console.WriteLine("What would you like to update:\n\t1 - Quantity\n\t2 - Date\n\t0 - Return to main menu");
+            }
+            if (option == 0)
             {
                 return;
             }
 
-            Console.WriteLine("Enter updated quantity:");
-            string? input2 = Console.ReadLine();
-            int updatedQuantity = 0;
-            while (!Int32.TryParse(input2, out updatedQuantity))
+            GetRecords();
+            Console.WriteLine("Select a record to update");
+            Console.WriteLine("Type the ID of the record");
+            string? IDinput = Console.ReadLine();
+            int updatedID = 0;
+            while (!Int32.TryParse(IDinput,out updatedID))
             {
                 Console.WriteLine("Please enter a number:");
-                input2 = Console.ReadLine();
+                IDinput = Console.ReadLine();
+            }
+
+            string? inputQuantity;
+            int updatedQuantity = 0;
+            string? updatedDate = "";
+            switch (option)
+            {
+                case 1:
+                    Console.WriteLine("Enter updated quantity:");
+                    inputQuantity = Console.ReadLine();
+                    while (!Int32.TryParse(inputQuantity, out updatedQuantity))
+                    {
+                        Console.WriteLine("Please enter a number:");
+                        inputQuantity = Console.ReadLine();
+                    }
+                    break;
+
+                case 2:
+                    Console.WriteLine("Enter updated date(dd-mm-yyyy)");
+                    updatedDate = Console.ReadLine();
+                    while (!DateTime.TryParseExact(updatedDate, "dd-MM-yyyy", new CultureInfo("en-GB"), DateTimeStyles.None, out _))
+                    {
+                        Console.WriteLine("\nPlease enter the date in the format(dd-mm-yyyy)");
+                        updatedDate = Console.ReadLine();
+                    }
+                    break;
             }
 
             using (SqliteConnection connection = new SqliteConnection(connectionString))
@@ -144,10 +183,22 @@ namespace Habit_Logger
                 connection.Open();
                 SqliteCommand command = connection.CreateCommand();
                 
-                command.CommandText =
-                    @$"UPDATE drinkingWater
-                        SET Quantity = {updatedQuantity}
-                        WHERE LogID = {updatedID}";
+                switch(option)
+                {
+                    case 1:
+                        command.CommandText =
+                            @$"UPDATE drinkingWater
+                            SET Quantity = {updatedQuantity}
+                            WHERE LogID = {updatedID}";
+                        break;
+
+                    case 2:
+                        command.CommandText =
+                            $@"UPDATE drinkingWater
+                            SET Date = {updatedDate}
+                            WHERE LogID = {updatedID}";
+                        break;
+                }
                 
                 command.ExecuteNonQuery();
                 connection.Close();
